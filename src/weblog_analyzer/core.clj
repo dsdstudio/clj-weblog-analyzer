@@ -29,12 +29,15 @@
   "로그라인을 tokenize한다"
   ; ip, uid, userid, time, request, status, bytes-sent, referer-url, user-agent
   [log]
-  ; keys 와 tokenized-log sequence(vals) 를 교차되게 엮어서 새로운 hash-map을 만들어낸다
-  (zipmap [:ip :uid :userid :datetime :request :status :bytes-sent :referer-url :user-agent]
+    ; keys 와 tokenized-log sequence(vals) 를 교차되게 엮어서 새로운 hash-map을 만들어낸다
+  (let 
+    [m (zipmap [:ip :uid :userid :datetime :request :status :bytes-sent :referer-url :user-agent]
     ; TODO 정규식이 잘못된 탓인지 sequence 안에 re-seq 가 들어있는 형태의 자료구조가 나온다 -_-; 수정 필요.. (re-seq ... ) 
     (rest 
       (first 
-        (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log)))))
+        (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))))]
+    (assoc m 
+      :datetime (.parse (java.text.SimpleDateFormat. "[dd/MMM/yyyy:HH:mm:ss ZZZZ]" java.util.Locale/ENGLISH) (get m :datetime)))))
 
 (defn log-scan
   [file]
