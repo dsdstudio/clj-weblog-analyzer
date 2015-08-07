@@ -1,4 +1,5 @@
-(ns weblog-analyzer.core)
+(ns weblog-analyzer.core
+  (:gen-class))
 
 (defn scan-log 
   "디렉토리이름으로 로그를 스캔한다

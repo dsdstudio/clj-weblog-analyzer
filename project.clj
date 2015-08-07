@@ -1,4 +1,4 @@
-(defproject clj-weblog-analyzer "0.1.0-SNAPSHOT"
+(defproject weblog-analyzer "0.1.0-SNAPSHOT"
   :description "simple clojure weblog analyzer"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
