@@ -58,4 +58,4 @@
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
-    (log-scan args)))
+    (log-scan (first args))))
