@@ -1,10 +1,15 @@
 (ns weblog-analyzer.core
+  (:require [clojure.tools.logging :as log])
   (:gen-class))
+
+(defrecord Weblog 
+  [ip uid userid datetime request status bytes-sent referer-url user-agent])
 
 (defn scan-log 
   "디렉토리이름으로 로그를 스캔한다
   file-seq"
   [dirname]
+  (log/info "scanning directory : " dirname)
   (filter 
     #(false? (.isDirectory %))
      (file-seq (clojure.java.io/file dirname))))
@@ -16,29 +21,36 @@
 (defn file-to-lineseq
   "파일을 읽어 line-sequence 로 변환"
   [file]
+  (log/info "file read : " file)
   (line-seq (clojure.java.io/reader file)))
 
 (defn gzipfile-to-lineseq
   "gz 파일을 읽어 line-sequence 로 변환"
   [file]
+  (log/info "gz file read : " file)
   (clojure.string/split-lines 
     (with-open
       [in (java.util.zip.GZIPInputStream. (clojure.java.io/input-stream file))]
       (slurp in))))
 
+(defn tokenize
+  [log]
+  (rest 
+    (first 
+      (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))))
+
 (defn serialize-log 
   "로그라인을 tokenize한다"
   ; ip, uid, userid, time, request, status, bytes-sent, referer-url, user-agent
   [log]
-    ; keys 와 tokenized-log sequence(vals) 를 교차되게 엮어서 새로운 hash-map을 만들어낸다
+  (log/debug log)
+  ; keys 와 tokenized-log sequence(vals) 를 교차되게 엮어서 새로운 hash-map을 만들어낸다
   (let 
     [m (zipmap [:ip :uid :userid :datetime :request :status :bytes-sent :referer-url :user-agent]
     ; TODO 정규식이 잘못된 탓인지 sequence 안에 re-seq 가 들어있는 형태의 자료구조가 나온다 -_-; 수정 필요.. (re-seq ... ) 
-    (rest 
-      (first 
-        (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))))]
+    (tokenize log))]
     (assoc m 
-      :datetime (.parse (java.text.SimpleDateFormat. "[dd/MMM/yyyy:HH:mm:ss ZZZZ]" java.util.Locale/ENGLISH) (get m :datetime)))))
+      :datetime (.parse (java.text.SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss ZZZ" java.util.Locale/ENGLISH) (get m :datetime)))))
 
 (defn log-scan
   [file]
@@ -58,4 +70,5 @@
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
-    (log-scan (first args))))
+    (let [x (log-scan (first args))]
+      (println (count x)))))
