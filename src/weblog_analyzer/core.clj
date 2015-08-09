@@ -2,6 +2,7 @@
   (:require [clojure.tools.logging :as log])
   (:gen-class))
 
+;웹로그를 담을 데이터구조
 (defrecord Weblog 
   [ip uid userid datetime request status bytes-sent referer-url user-agent])
 
@@ -34,23 +35,33 @@
       (slurp in))))
 
 (defn tokenize
+  ; TODO 정규식이 잘못된 탓인지 sequence 안에 re-seq 가 들어있는 형태의 자료구조가 나온다 -_-; 수정 필요.. (re-seq ... ) 
   [log]
   (rest 
     (first 
       (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))))
 
-(defn serialize-log 
+
+(defn filter-log 
+  "정규식에 맞지않는형식의 로그는 필터링한다"
+  [coll] 
+  (filter (fn [x] (not-empty x)) coll))
+
+(defn objectfy-data [coll] 
+  "seq 형태의 자료구조를 가지고 weblog defrecord 형태로 변환"
+  (map #(apply (Weblog. %1 %2 %3 %4 %5 %6 %7 %8 %9) coll)))
+
+(defn serialize-log
   "로그라인을 tokenize한다"
-  ; ip, uid, userid, time, request, status, bytes-sent, referer-url, user-agent
   [log]
   (log/debug log)
-  ; keys 와 tokenized-log sequence(vals) 를 교차되게 엮어서 새로운 hash-map을 만들어낸다
-  (let 
-    [m (zipmap [:ip :uid :userid :datetime :request :status :bytes-sent :referer-url :user-agent]
-    ; TODO 정규식이 잘못된 탓인지 sequence 안에 re-seq 가 들어있는 형태의 자료구조가 나온다 -_-; 수정 필요.. (re-seq ... ) 
-    (tokenize log))]
-    (assoc m 
-      :datetime (.parse (java.text.SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss ZZZ" java.util.Locale/ENGLISH) (get m :datetime)))))
+  ; process pipeline 
+  ; TODO assoc datetime 처리 추가
+  ; TODO 좀더 깔끔한 이디엄은 없나 ?
+  (objectfy-data (filter-log (tokenize log))))
+
+  ;(assoc m
+  ;  :datetime (.parse (java.text.SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss ZZZ" java.util.Locale/ENGLISH) datetime)))
 
 (defn log-scan
   [file]
