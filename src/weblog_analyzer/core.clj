@@ -17,7 +17,8 @@
 
 (defn gzfile? 
   [f] 
-  (.endsWith ".gz" (.getAbsolutePath f)))
+  ; java interop 시에는 (함수명 인스턴스 인자) 의 형태로 호출
+  (.endsWith (.getAbsolutePath f) ".gz"))
 
 (defn file-to-lineseq
   "파일을 읽어 line-sequence 로 변환"
