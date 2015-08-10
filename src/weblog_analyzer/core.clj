@@ -6,7 +6,7 @@
 (defrecord Weblog 
   [ip uid userid datetime request status bytes-sent referer-url user-agent])
 
-(defn scan-log 
+(defn scan-directory
   "디렉토리이름으로 로그를 스캔한다
   file-seq"
   [dirname]
@@ -68,9 +68,9 @@
   (mapcat 
     ;gz 파일인경우 읽는방식이 다르므로 별도로 line-seq 읽는 함수를 만들었다.
     #(if (gzfile? %) 
-       (map serialize-log (gzipfile-to-lineseq %)) 
+       (map serialize-log (gzipfile-to-lineseq %))
        (map serialize-log (file-to-lineseq %)))
-    (scan-log file)))
+    (scan-directory file)))
 
 (defn success-request? 
   [log]
