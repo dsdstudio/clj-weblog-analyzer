@@ -50,7 +50,7 @@
 
 (defn objectfy-data [coll] 
   "seq 형태의 자료구조를 가지고 weblog defrecord 형태로 변환"
-  (map #(apply (Weblog. %1 %2 %3 %4 %5 %6 %7 %8 %9) coll)))
+  (map #(apply ->Weblog %) coll))
 
 (defn serialize-log
   "로그라인을 tokenize한다"
