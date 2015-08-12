@@ -16,9 +16,10 @@
      (file-seq (clojure.java.io/file dirname))))
 
 (defn gzfile? 
+  "gzfile인지 판단"
   [f] 
-  ; java interop 시에는 (함수명 인스턴스 인자) 의 형태로 호출
-  (.endsWith (.getAbsolutePath f) ".gz"))
+  (-> (.getAbsolutePath f)
+     (.endsWith ".gz")))
 
 (defn file-to-lineseq
   "파일을 읽어 line-sequence 로 변환"
@@ -36,47 +37,28 @@
       (slurp in))))
 
 (defn tokenize
-  ; TODO 정규식이 잘못된 탓인지 sequence 안에 re-seq 가 들어있는 형태의 자료구조가 나온다 -_-; 수정 필요.. (re-seq ... ) 
   [log]
-  (rest 
-    (first 
-      (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))))
-
-
-(defn filter-log 
-  "정규식에 맞지않는형식의 로그는 필터링한다"
-  [coll] 
-  (filter (fn [x] (not-empty x)) coll))
-
-(defn objectfy-data [coll] 
-  "seq 형태의 자료구조를 가지고 weblog defrecord 형태로 변환"
-  (map #(apply ->Weblog %) coll))
+  (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))
 
 (defn serialize-log
   "로그라인을 tokenize한다"
   [log]
-  ; process pipeline 
-  ; TODO assoc datetime 처리 추가
-  ; TODO 좀더 깔끔한 이디엄은 없나 ?
-  (objectfy-data (filter-log (tokenize log))))
-
-  ;(assoc m
-  ;  :datetime (.parse (java.text.SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss ZZZ" java.util.Locale/ENGLISH) datetime)))
-
+  (let [tokens (rest (first (tokenize log)))]
+    (if (not= (count tokens) 9) nil
+      (let [weblog (apply ->Weblog tokens)]
+      (assoc weblog
+             :datetime (-> (java.text.SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss ZZZ" java.util.Locale/ENGLISH)
+                           (.parse (get weblog :datetime))
+                           (.getTime)))))))
 (defn log-scan
   [file]
   (mapcat 
-    ;gz 파일인경우 읽는방식이 다르므로 별도로 line-seq 읽는 함수를 만들었다.
     #(if (gzfile? %) 
-       (map serialize-log (gzipfile-to-lineseq %))
-       (map serialize-log (file-to-lineseq %)))
+       (filter (fn [x] (not (nil? x))) (map (fn [x] (serialize-log x)) (gzipfile-to-lineseq %)))
+       (filter (fn [x] (not (nil? x))) (map (fn [x] (serialize-log x)) (file-to-lineseq %))))
     (scan-directory file)))
-
-(defn success-request? 
-  [log]
-  (= "200" (get log :status)))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
-    (let [logs (log-scan (first args))]
-       (println logs))))
+    (doall
+      (map println (distinct (map #(get % :ip) (log-scan (first args))))))))
