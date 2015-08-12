@@ -23,13 +23,13 @@
 (defn file-to-lineseq
   "파일을 읽어 line-sequence 로 변환"
   [file]
-  (log/info "file read : " file)
+  (log/info "file read : " (.getAbsolutePath file))
   (line-seq (clojure.java.io/reader file)))
 
 (defn gzipfile-to-lineseq
   "gz 파일을 읽어 line-sequence 로 변환"
   [file]
-  (log/info "gz file read : " file)
+  (log/info "gz file read : " (.getAbsolutePath file))
   (clojure.string/split-lines 
     (with-open
       [in (java.util.zip.GZIPInputStream. (clojure.java.io/input-stream file))]
@@ -55,7 +55,6 @@
 (defn serialize-log
   "로그라인을 tokenize한다"
   [log]
-  (log/debug log)
   ; process pipeline 
   ; TODO assoc datetime 처리 추가
   ; TODO 좀더 깔끔한 이디엄은 없나 ?
@@ -77,10 +76,7 @@
   [log]
   (= "200" (get log :status)))
 
-; function literal (fn [x] (get x :ip)) -> #(get % :ip)
-; (count (distinct (map #(get % :ip) (filter success-request? (log-scan "logs")))))
-
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
-    (let [x (log-scan (first args))]
-      (println (count x)))))
+    (let [logs (log-scan (first args))]
+       (println logs))))
