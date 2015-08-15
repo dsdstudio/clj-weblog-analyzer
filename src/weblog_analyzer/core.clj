@@ -11,15 +11,16 @@
   file-seq"
   [dirname]
   (log/info "scanning directory : " dirname)
-  (filter 
-    #(false? (.isDirectory %))
-     (file-seq (clojure.java.io/file dirname))))
+  (->> (clojure.java.io/file dirname)
+       (file-seq)
+       (filter #(false? (.isDirectory %)))))
+
 
 (defn gzfile? 
   "gzfile인지 판단"
   [f] 
   (-> (.getAbsolutePath f)
-     (.endsWith ".gz")))
+      (.endsWith ".gz")))
 
 (defn file-to-lineseq
   "파일을 읽어 line-sequence 로 변환"
