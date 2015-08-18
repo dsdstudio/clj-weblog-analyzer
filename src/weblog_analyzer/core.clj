@@ -53,13 +53,25 @@
                            (.getTime)))))))
 (defn log-scan
   [file]
-  (mapcat 
+  (mapcat
     #(if (gzfile? %) 
        (filter (fn [x] (not (nil? x))) (map (fn [x] (serialize-log x)) (gzipfile-to-lineseq %)))
        (filter (fn [x] (not (nil? x))) (map (fn [x] (serialize-log x)) (file-to-lineseq %))))
     (scan-directory file)))
 
+
+(defn ip-stat 
+  "IP별 통계를 뽑아낸다 
+  {:ip xxx :count 33} .....
+  TODO refactoring 필요.. ip필드가 인덱싱이 안되어있어서 콜렉션 전체에 풀스캔이 걸림 -_-;"
+  [coll]
+  (let [table (distinct (map #(get % :ip) coll))]
+    (map 
+      (fn [x] {:ip x 
+               :count (count (filter (fn [log] (.equals x (get log :ip))) coll))}) 
+      table)))
+
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
     (doall
-      (map println (distinct (map #(get % :ip) (log-scan (first args))))))))
+      (map println (ip-stat (log-scan (first args)))))))
