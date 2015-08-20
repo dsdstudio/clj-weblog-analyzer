@@ -24,4 +24,4 @@
 
 (deftest invalid-log-test 
   "잘못된 로그를 검사한다."
-  (is (nil? (serialize-log invalid-log)))
+  (is (nil? (serialize-log invalid-log))))
