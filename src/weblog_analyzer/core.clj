@@ -21,13 +21,13 @@
   (-> (.getAbsolutePath f)
       (.endsWith ".gz")))
 
-(defn file-to-lineseq
+(defn read-lines
   "파일을 읽어 line-sequence 로 변환"
   [file]
   (log/info "file read : " (.getAbsolutePath file))
-  (line-seq (clojure.java.io/reader file)))
+  (clojure.string/split-lines (slurp (clojure.java.io/reader file))))
 
-(defn gzipfile-to-lineseq
+(defn gzip-read-lines 
   "gz 파일을 읽어 line-sequence 로 변환"
   [file]
   (log/info "gz file read : " (.getAbsolutePath file))
@@ -36,36 +36,41 @@
       [in (java.util.zip.GZIPInputStream. (clojure.java.io/input-stream file))]
       (slurp in))))
 
-(defn tokenize
-  [log]
-  (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log))
+;TODO 유틸성 함수들 외부파일로 뺴는게 좋을듯
+(defn notnil? [x] (not (nil? x)))
+(defn dict-inc [m coll] (update-in m [coll] (fnil inc 0)))
+(defn to-datetime [s pattern]
+  (-> (java.text.SimpleDateFormat. pattern java.util.Locale/ENGLISH)
+      (.parse s)
+      (.getTime)))
 
-(defn serialize-log
-  "로그라인을 tokenize한다"
+(defn tokenize-weblog 
+  [log] 
+  (-> (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log)
+      first
+      rest))
+
+
+(defn parse-log 
+  "로그라인을 파싱한다"
   [log]
-  (let [tokens (rest (first (tokenize log)))]
-    (if (not= (count tokens) 9) nil
-      (let [weblog (apply ->Weblog tokens)]
-      (assoc weblog
-             :datetime (-> (java.text.SimpleDateFormat. "dd/MMM/yyyy:HH:mm:ss ZZZ" java.util.Locale/ENGLISH)
-                           (.parse (get weblog :datetime))
-                           (.getTime)))))))
-(defn log-scan
-  [file]
+  (let [tokens (tokenize-weblog log)]
+    (if (= (count tokens) 9) (update-in (apply ->Weblog tokens) [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ"))
+      nil)))
+
+(defn log-scan [file]
   (mapcat
     #(if (gzfile? %) 
-       (filter (fn [x] (not (nil? x))) (map (fn [x] (serialize-log x)) (gzipfile-to-lineseq %)))
-       (filter (fn [x] (not (nil? x))) (map (fn [x] (serialize-log x)) (file-to-lineseq %))))
+       (filter notnil? (map parse-log (gzip-read-lines %)))
+       (filter notnil? (map parse-log (read-lines %))))
     (scan-directory file)))
-
-(defn dict-inc [m coll]
-  (update-in m [coll] (fnil inc 0)))
 
 (defn ip-stat 
   "IP별 통계를 뽑아낸다 
   {:ip xxx :count 33} ....."
   [coll]
   (reduce dict-inc {} (map #(get % :ip) coll)))
+
 (defn referer-stat 
   "referer별 통계를 뽑아낸다"
   [coll]
@@ -74,4 +79,4 @@
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
     (doall
-      (map println (referer-stat (log-scan (first args)))))))
+      (map println (reverse (sort-by #(last %1) (referer-stat (log-scan (first args)))))))))
