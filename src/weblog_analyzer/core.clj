@@ -69,12 +69,12 @@
   "IP별 통계를 뽑아낸다 
   {:ip xxx :count 33} ....."
   [coll]
-  (reduce dict-inc {} (map #(get % :ip) coll)))
+  (reduce dict-inc {} (map :ip coll)))
 
 (defn referer-stat 
   "referer별 통계를 뽑아낸다"
   [coll]
-  (reduce dict-inc {} (map #(get % :referer-url) coll)))
+  (reduce dict-inc {} (map :referer-url coll)))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
