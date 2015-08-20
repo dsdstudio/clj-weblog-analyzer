@@ -15,7 +15,6 @@
        (file-seq)
        (filter #(false? (.isDirectory %)))))
 
-
 (defn gzfile? 
   "gzfile인지 판단"
   [f] 
@@ -67,7 +66,12 @@
   {:ip xxx :count 33} ....."
   [coll]
   (reduce dict-inc {} (map #(get % :ip) coll)))
+(defn referer-stat 
+  "referer별 통계를 뽑아낸다"
+  [coll]
+  (reduce dict-inc {} (map #(get % :referer-url) coll)))
+
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
     (doall
-      (map println (ip-stat (log-scan (first args)))))))
+      (map println (referer-stat (log-scan (first args)))))))
