@@ -50,7 +50,6 @@
       first
       rest))
 
-
 (defn parse-log 
   "로그라인을 파싱한다"
   [log]
@@ -58,13 +57,12 @@
     (if (= (count tokens) 9) (update-in (apply ->Weblog tokens) [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ"))
       nil)))
 
-(defn read-lines-factory
-  "파일 확장자로 gzip 파일인지 판단하여 다른 라인 리더를 리턴해주는 팩토리이다"
-  [file]
-  (if (gzfile? file) gzip-read-lines read-lines))
-
 (defn log-scan [file]
-  (mapcat (filter notnil? (map parse-log read-lines-factory)) (scan-directory file)))
+   (mapcat
+     #(if (gzfile? %)
+        (filter notnil? (map parse-log (gzip-read-lines %)))
+        (filter notnil? (map parse-log (read-lines %))))
+     (scan-directory file)))
 
 (defn ip-stat 
   "IP별 통계를 뽑아낸다 
