@@ -70,6 +70,9 @@
   [coll]
   (reduce dict-inc {} (map :ip coll)))
 
+(defn url-stat [coll]
+  (reduce dict-inc {} (map :request coll)))
+
 (defn referer-stat 
   "referer별 통계를 뽑아낸다"
   [coll]
