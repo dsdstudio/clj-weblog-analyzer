@@ -1,5 +1,6 @@
 (ns weblog-analyzer.core
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [weblog-analyzer.util :refer :all])
   (:gen-class))
 
 ;웹로그를 담을 데이터구조
@@ -36,13 +37,6 @@
       [in (java.util.zip.GZIPInputStream. (clojure.java.io/input-stream file))]
       (slurp in))))
 
-;TODO 유틸성 함수들 외부파일로 뺴는게 좋을듯
-(defn notnil? [x] (not (nil? x)))
-(defn dict-inc [m coll] (update-in m [coll] (fnil inc 0)))
-(defn to-datetime [s pattern]
-  (-> (java.text.SimpleDateFormat. pattern java.util.Locale/ENGLISH)
-      (.parse s)
-      (.getTime)))
 
 (defn tokenize-weblog 
   [log] 
