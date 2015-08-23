@@ -1,6 +1,7 @@
 (ns weblog-analyzer.core
   (:require [clojure.tools.logging :as log]
-            [weblog-analyzer.util :refer :all])
+            [weblog-analyzer.util :refer :all]) 
+  (:import java.util.Date)
   (:gen-class))
 
 ;웹로그를 담을 데이터구조
@@ -71,6 +72,8 @@
   "referer별 통계를 뽑아낸다"
   [coll]
   (reduce dict-inc {} (map :referer-url coll)))
+(defn group-by-day [coll]
+  (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
