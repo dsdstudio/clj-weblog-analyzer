@@ -7,4 +7,4 @@
       (.parse s)
       (.getTime)))
 (defn datetime-to-str [t pattern]
-  (.format (java.util.Date. t) (java.text.SimpleDateFormat. pattern java.util.Locale/ENGLISH)))
+  (.format (java.text.SimpleDateFormat. pattern java.util.Locale/ENGLISH) (java.util.Date. t)))
