@@ -72,8 +72,10 @@
   "referer별 통계를 뽑아낸다"
   [coll]
   (reduce dict-inc {} (map :referer-url coll)))
+
 (defn group-by-day [coll]
-  (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll))
+  (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll)] 
+    {(key m) (count (val m))}))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
