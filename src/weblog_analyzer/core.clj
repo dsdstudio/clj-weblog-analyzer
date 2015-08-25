@@ -74,8 +74,8 @@
   (reduce dict-inc {} (map :referer-url coll)))
 
 (defn group-by-day [coll]
-  (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll)] 
-    {(key m) (count (val m))}))
+  (sort-by first (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll)]
+    {(key m) (count (val m))})))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
