@@ -20,8 +20,8 @@
 
 (deftest serialize-log-test  
   "로그라인 직렬화 처리를 검사한다"
-  (is (.equals compare-log-map (weblog-analyzer.core/serialize-log log-string))))
+  (is (.equals compare-log-map (parse-log log-string))))
 
 (deftest invalid-log-test 
   "잘못된 로그를 검사한다."
-  (is (nil? (serialize-log invalid-log))))
+  (is (nil? (parse-log invalid-log))))
