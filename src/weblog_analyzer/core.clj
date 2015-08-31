@@ -80,6 +80,10 @@
   (for [m (group-by (fn [x] (:request x)) coll)]
     {(key m) (count (val m))}))
 
+(defn group-by-useragent [coll]
+  (for [m (group-by (fn [x] (:user-agent x)) coll)]
+    {(key m) (count (val m))}))
+
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
     (doall
