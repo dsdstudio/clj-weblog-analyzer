@@ -6,7 +6,7 @@
 
 ;웹로그를 담을 데이터구조
 (defrecord Weblog 
-  [ip uid userid datetime request status bytes-sent referer-url user-agent])
+  [datetime domain ip user method path protocol status size referer ua response_time cookie set-cookie upstream_addr upstream_cache_status upstream_response_time])
 
 (defn scan-directory
   "디렉토리이름으로 로그를 스캔한다
@@ -38,18 +38,12 @@
       [in (java.util.zip.GZIPInputStream. (clojure.java.io/input-stream file))]
       (slurp in))))
 
-(defn tokenize-weblog 
-  [log] 
-  (-> (re-seq #"^([\d.]+)\ (\S+)\ (\S+)\ \[([\w:/]+\s[+\-]\d{4})\]\ \"(.+?)\"\ (\d{3})\ (\d+)\ \"([^\"]+)\"\ \"([^\"]+)\"" log)
-      first
-      rest))
+(defn tokenize-weblog [log] (clojure.string/split log #"\t"))
 
 (defn parse-log 
   "로그라인을 파싱한다"
   [log]
-  (let [tokens (tokenize-weblog log)]
-    (if (= (count tokens) 9) (update-in (apply ->Weblog tokens) [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ"))
-      nil)))
+  (update-in (apply ->Weblog (tokenize-weblog log)) [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ")))
 
 (defn log-scan [file]
    (mapcat
@@ -74,15 +68,15 @@
 
 (defn group-by-day [coll]
   (sort-by first (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll)]
-    {(key m) (count (val m))})))
+    {:date (key m) :count (count (val m))})))
 
 (defn group-by-url [coll]
-  (for [m (group-by (fn [x] (:request x)) coll)]
-    {(key m) (count (val m))}))
+  (for [m (group-by (fn [x] (:path x)) coll)]
+    {:path (key m) :count (count (val m))}))
 
 (defn group-by-useragent [coll]
-  (for [m (group-by (fn [x] (:user-agent x)) coll)]
-    {(key m) (count (val m))}))
+  (for [m (group-by (fn [x] (:ua x)) coll)]
+    {:ua (key m) :count (count (val m))}))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")
