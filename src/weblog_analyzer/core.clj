@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [weblog-analyzer.util :refer :all]
             [clojure.data.json :as json]
-            [clojure.edn :refer :all])
+            [clojure.edn :as edn])
   (:import java.util.Date)
   (:gen-class))
 
@@ -10,7 +10,7 @@
 (defrecord Weblog 
   [datetime domain ip user method path protocol status size referer ua response_time cookie set-cookie upstream_addr upstream_cache_status upstream_response_time])
 
-(def conf (clojure.edn/read-string (slurp "conf.clj")))
+(def conf (edn/read-string (slurp "conf.clj")))
 
 (defn scan-directory
   "디렉토리이름으로 로그를 스캔한다
@@ -44,10 +44,15 @@
 
 (defn tokenize-weblog [log] (clojure.string/split log #"\t"))
 
+(defn parse-cookie [cookie]
+  (map (fn [x] x) (clojure.string/split cookie #"=|;\ ")))
+
 (defn parse-log 
   "로그라인을 파싱한다"
   [log]
-  (update-in (apply ->Weblog (tokenize-weblog log)) [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ")))
+  (-> (apply ->Weblog (tokenize-weblog log))
+      (update-in [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ"))
+      (update-in [:cookie] #(parse-cookie %))))
 
 (defn log-scan [file]
    (mapcat
@@ -56,37 +61,18 @@
         (filter notnil? (map parse-log (read-lines %))))
      (scan-directory file)))
 
-(defn group-by-day [coll]
-  (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMdd")) coll)]
-    {:date (key m) :data (val m)}))
-(defn group-by-hour [coll]
-  (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMddHH")) coll)]
-    {:date (key m) :data (val m)}))
-
-(defn group-by-url [coll]
-  (for [m (group-by (fn [x] (:path x)) coll)]
-    {:path (key m) :count (count (val m))}))
-
-(defn group-by-useragent [coll]
-  (for [m (group-by (fn [x] (:ua x)) coll)]
-    {:ua (key m) :count (count (val m))}))
-
-(defn group-by-referer [coll]
-  (for [m (group-by (fn [x] (:referer x)) coll)]
-    {:referer (key m) :count (count (val m))}))
-
-
 (defn group-by-campaign-mail [coll]
   (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMddHH")) (filter (fn [x] (re-find #"\/\?ref=email" (:path x))) coll))]
     {:datetime (key m)
      :count (count (val m))
-     :data (map (fn [x] {:datetime (datetime-to-str (:datetime x) "yyyy-MM-dd HH:mm:ss")
+     :data (map (fn [x] {
+                         :datetime (datetime-to-str (:datetime x) "yyyy-MM-dd HH:mm:ss")
                          :path (:path x)}) (val m))}))
 
 (defn write-email-analysis-data-to-json [coll]
   (with-open [w (clojure.java.io/writer "email_data.json")]
     (binding [*out* w]
-      (json/print-json (sort-by :datetime (group-by-campaign coll))))))
+      (json/print-json (sort-by :datetime (group-by-campaign-mail coll))))))
 
 (defn -main [& args]
   (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")))
