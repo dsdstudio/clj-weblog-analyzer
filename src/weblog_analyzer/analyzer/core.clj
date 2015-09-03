@@ -1,4 +1,4 @@
-(ns weblog-analyzer.core
+(ns weblog-analyzer.analyzer.core
   (:require [clojure.tools.logging :as log]
             [weblog-analyzer.util :refer :all]
             [clojure.data.json :as json]
@@ -13,8 +13,7 @@
 (def conf (edn/read-string (slurp "conf.clj")))
 
 (defn scan-directory
-  "디렉토리이름으로 로그를 스캔한다
-  file-seq"
+  "디렉토리이름으로 로그를 스캔한다"
   [dirname]
   (log/info "scanning directory : " dirname)
   (->> (clojure.java.io/file dirname)
@@ -45,7 +44,7 @@
 (defn tokenize-weblog [log] (clojure.string/split log #"\t"))
 
 (defn parse-cookie [cookie]
-  (map (fn [x] x) (clojure.string/split cookie #"=|;\ ")))
+  (array-map (clojure.string/split cookie #"=|;\ ")))
 
 (defn parse-log 
   "로그라인을 파싱한다"
@@ -62,17 +61,19 @@
      (scan-directory file)))
 
 (defn group-by-campaign-mail [coll]
-  (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMddHH")) (filter (fn [x] (re-find #"\/\?ref=email" (:path x))) coll))]
+  (sort 
+    #(compare (:datetime %1) (:datetime %2)) 
+    (for [m (group-by (fn [x] (datetime-to-str (:datetime x) "yyyyMMddHH")) (filter (fn [x] (re-find #"\/\?ref=email" (:path x))) coll))]
     {:datetime (key m)
      :count (count (val m))
      :data (map (fn [x] {
                          :datetime (datetime-to-str (:datetime x) "yyyy-MM-dd HH:mm:ss")
-                         :path (:path x)}) (val m))}))
+                         :path (:path x)}) (val m))})))
 
 (defn write-email-analysis-data-to-json [coll]
   (with-open [w (clojure.java.io/writer "email_data.json")]
     (binding [*out* w]
-      (json/print-json (sort-by :datetime (group-by-campaign-mail coll))))))
+      (json/print-json (reverse (group-by-campaign-mail coll))))))
 
-(defn -main [& args]
-  (if (empty? args) (println "Usage: java -jar anl.jar [directorypath]")))
+;(doall 
+; (map pprint (group-by-campaign-mail (log-scan "logs"))))
