@@ -3,6 +3,7 @@
             [weblog-analyzer.util :refer :all]
             [clojure.data.json :as json]
             [clojure.edn :as edn])
+  (:use clojure.pprint)
   (:import java.util.Date)
   (:gen-class))
 
@@ -44,7 +45,8 @@
 (defn tokenize-weblog [log] (clojure.string/split log #"\t"))
 
 (defn parse-cookie [cookie]
-  (array-map (clojure.string/split cookie #"=|;\ ")))
+  (let [tokens (clojure.string/split cookie #"=|;\ ")]
+    (if (= 1 (count tokens)) cookie tokens)))
 
 (defn parse-log 
   "로그라인을 파싱한다"
@@ -70,10 +72,25 @@
                          :datetime (datetime-to-str (:datetime x) "yyyy-MM-dd HH:mm:ss")
                          :path (:path x)}) (val m))})))
 
+(defn group-by-campaign-email-open "email open 통계를 계산한다" [coll]
+  (sort 
+    #(compare (:datetime %1) (:datetime %2))
+    (for [m (group-by
+              (fn [x] (datetime-to-str (:datetime x) "yyyyMMddHH"))
+              (filter (fn [x] (not (contains? (:filtered-ip conf) (:ip x)))) coll))]
+    {:datetime (key m)
+     :count (count (val m))
+     :data (map (fn [x] {
+                         :datetime (datetime-to-str (:datetime x) "yyyyMMddHHmmss")
+                         :path (:path x)}) (val m))})))
+
 (defn write-email-analysis-data-to-json [coll]
   (with-open [w (clojure.java.io/writer "email_data.json")]
     (binding [*out* w]
-      (json/print-json (reverse (group-by-campaign-mail coll))))))
+      (json/print-json coll))))
 
-;(doall 
-; (map pprint (group-by-campaign-mail (log-scan "logs"))))
+(defn email-open-stat-by-distinct [coll]
+  (doall 
+    (map pprint (distinct (map :path coll)))))
+
+;(map pprint (filter (fn [x] (boolean (re-find #"20150903" (:datetime x)))) (group-by-campaign-email-open (log-scan "email_logs"))))
