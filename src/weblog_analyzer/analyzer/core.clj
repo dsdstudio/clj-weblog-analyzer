@@ -43,10 +43,11 @@
       (slurp in))))
 
 (defn tokenize-weblog [log] (clojure.string/split log #"\t"))
-
-(defn parse-cookie [cookie]
-  (let [tokens (clojure.string/split cookie #"=|;\ ")]
-    (if (= 1 (count tokens)) cookie tokens)))
+(defn parse-cookie [cookie-str]
+  (into {}
+    (for [#^String cookie (.split cookie-str ";")]
+      (let [keyval (map (fn [#^String x] (.trim x)) (.split cookie "=" 2))]
+        [(first keyval) (second keyval)]))))
 
 (defn parse-log 
   "로그라인을 파싱한다"
