@@ -1,5 +1,7 @@
 # weblog-analyzer
 
+WARNING! this is my study(experimental) project.
+
 clojure study 용으로 작은 웹로그 분석기를 만든다.
 
 ## Usage
@@ -19,11 +21,11 @@ clojure study 용으로 작은 웹로그 분석기를 만든다.
 - 유입채널별 검색어별 통계를 뽑아낸다.
 - useragent map 만들기
 
-## Feature 0.0.1 
+## Feature 0.0.1
 
 - ip별 통계
 - 유입채널별 통계
-- 로그 필터링 설정 
+- 로그 필터링 설정
 - url 패턴 필터링 설정
 
 ## License
