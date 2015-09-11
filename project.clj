@@ -13,7 +13,8 @@
                  [ring/ring-jetty-adapter "1.4.0"]
                  [org.clojure/tools.logging "0.3.1"]
                  [com.novemberain/monger "3.0.0"]
-                 [ch.qos.logback/logback-classic "1.1.3"]]
+                 [ch.qos.logback/logback-classic "1.1.3"]
+                 [cheshire "5.5.0"]]
   :plugins [[lein-ring "0.9.6"]
             [lein-sub "0.3.0"]]
   :ring {:handler weblog-analyzer.logger.handler/app}
