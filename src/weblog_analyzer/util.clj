@@ -12,3 +12,9 @@
 
 (defn load-config [file] 
   (clojure.tools.reader.edn/read-string (slurp file)))
+
+(defn param-map [path]
+  (if (or (nil? path) (= -1 (.indexOf path "?"))) {}
+    (reduce into {}
+      (map #(let [[k v] (clojure.string/split % #"=")] {k v})
+         (clojure.string/split (.substring path (+ 1 (.indexOf path "?")) (.length path)) #"&")))))
