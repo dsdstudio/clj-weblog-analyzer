@@ -12,7 +12,6 @@
   [datetime domain ip user method path protocol status size referer ua response_time cookie set-cookie upstream_addr upstream_cache_status upstream_response_time])
 
 (def conf (edn/read-string (slurp "conf.clj")))
-
 (defn scan-directory
   "디렉토리이름으로 로그를 스캔한다"
   [dirname]
@@ -26,6 +25,7 @@
   [f] 
   (-> (.getAbsolutePath f)
       (.endsWith ".gz")))
+
 
 (defn read-lines
   "파일을 읽어 line-sequence 로 변환"
@@ -52,9 +52,11 @@
 (defn parse-log 
   "로그라인을 파싱한다"
   [log]
-  (-> (apply ->Weblog (tokenize-weblog log))
-      (update-in [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ"))
-      (update-in [:cookie] #(parse-cookie %))))
+  (let [weblog
+        (-> (apply ->Weblog (tokenize-weblog log))
+        (update-in [:datetime] #(to-datetime % "dd/MMM/yyyy:HH:mm:ss ZZZ"))
+        (update-in [:cookie] #(parse-cookie %)))]
+    (assoc weblog :params (param-map (:path weblog)))))
 
 (defn log-scan [file]
    (mapcat
@@ -93,5 +95,3 @@
 (defn email-open-stat-by-distinct [coll]
   (doall 
     (map pprint (distinct (map :path coll)))))
-
-;(map pprint (filter (fn [x] (boolean (re-find #"20150903" (:datetime x)))) (group-by-campaign-email-open (log-scan "email_logs"))))
