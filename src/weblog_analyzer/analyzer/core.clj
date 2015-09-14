@@ -72,7 +72,7 @@
     {:datetime (key m)
      :count (count (val m))
      :data (map (fn [x] {
-                         :datetime (datetime-to-str (:datetime x) "yyyy-MM-dd HH:mm:ss")
+                         :datetime (datetime-to-str (:datetime x) "yyyyMMddHHmmss")
                          :path (:path x)}) (val m))})))
 
 (defn group-by-campaign-email-open "email open 통계를 계산한다" [coll]
@@ -85,12 +85,25 @@
      :count (count (val m))
      :data (map (fn [x] {
                          :datetime (datetime-to-str (:datetime x) "yyyyMMddHHmmss")
-                         :path (:path x)}) (val m))})))
+                         :params (:params x)}) (val m))})))
 
 (defn write-email-analysis-data-to-json [coll]
   (with-open [w (clojure.java.io/writer "email_data.json")]
     (binding [*out* w]
       (json/print-json coll))))
+
+(defn group-by-mail-type [coll]
+  (sort #(compare (:type %1) (:type %2)) 
+    (map 
+      (fn [x] {:type (key x) :count (count (val x))}) 
+         (group-by :type (map (fn [x] {:date (datetime-to-str (:datetime x) "yyyyMMdd") :type (get (:params x) "emailid")}) coll)))))
+(defn group-by-date-and-type [etype coll]
+  (let [filtered (filter 
+    (fn [x] (= etype (get (:params x) "emailid"))) 
+    coll)]
+    (map
+      (fn [x] {:date (key x) :count (count (val x))})
+      (group-by :date (map (fn [x] {:date (datetime-to-str (:datetime x) "yyyyMMdd") }) filtered)))))
 
 (defn email-open-stat-by-distinct [coll]
   (doall 
