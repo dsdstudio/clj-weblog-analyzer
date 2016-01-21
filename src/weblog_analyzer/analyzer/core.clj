@@ -101,9 +101,10 @@
   (let [filtered (filter 
     (fn [x] (= etype (get (:params x) "emailid"))) 
     coll)]
-    (map
-      (fn [x] {:date (key x) :count (count (val x))})
-      (group-by :date (map (fn [x] {:date (datetime-to-str (:datetime x) "yyyyMMdd") }) filtered)))))
+    (sort #(compare (:date %1) (:date %2))
+      (map
+        (fn [x] {:date (key x) :count (count (val x))})
+        (group-by :date (map (fn [x] {:date (datetime-to-str (:datetime x) "yyyyMMdd") }) filtered))))))
 
 (defn email-open-stat-by-distinct [coll]
   (doall 
